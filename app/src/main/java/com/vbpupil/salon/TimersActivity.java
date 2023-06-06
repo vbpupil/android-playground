@@ -8,6 +8,7 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -17,47 +18,72 @@ import android.widget.Toast;
 public class TimersActivity extends AppCompatActivity {
     public int counter;
 
+    public int countDown;
+    Button startTimerButton;
+    Button stopAlarmButton;
+    TextView timerCountdown;
+    TextView timerDescription;
+    Alarm alarm;
+
+    CountDownTimer timer;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_timers);
 
-        this.handleStartTimer();
+        this.setUp();
     }
 
-    public void handleStartTimer(){
-        Button startTimerButton = (Button) findViewById(R.id.startTimer);
-        TextView timerDisplay = (TextView) findViewById(R.id.timerInput);
+    void setUp() {
+        this.startTimerButton = (Button) findViewById(R.id.startTimer);
+        this.stopAlarmButton = (Button) findViewById(R.id.stopAlarm);
+        this.timerCountdown = (TextView) findViewById(R.id.timerInput);
+        this.timerDescription = (TextView) findViewById(R.id.timerName);
+        this.alarm = new Alarm(getApplicationContext());
 
         startTimerButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new CountDownTimer(5000, 1000){
-                    public void onTick(long millisUntilFinished){
-                        timerDisplay.setText(String.valueOf(counter));
-                        counter++;
-                    }
-                    public  void onFinish(){
-                        timerDisplay.setText("FINISH!!");
-                        Alarm a = new Alarm(getApplicationContext());
-                        a.sound();
-                    }
-                }.start();
+                startTimer();
+            }
+        });
+
+        stopAlarmButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                clearAlarm();
             }
         });
     }
 
-    public void createTimer(View v){
-        EditText nameInput = findViewById(R.id.timerName);
-        EditText durationInput = findViewById(R.id.timerInput);
+    private void startTimer() {
+        this.countDown = Integer.valueOf(this.timerCountdown.getText().toString());
+        this.timerCountdown.setEnabled(false);
+        this.timerDescription.setEnabled(false);
 
-        Toast.makeText(this, nameInput.getText() + " Created", Toast.LENGTH_SHORT).show();
+        counter = this.countDown;
+       this.timer = new CountDownTimer(countDown * 1000, 1000) {
+            public void onTick(long millisUntilFinished) {
+                timerCountdown.setText(String.valueOf(counter));
+                counter--;
+            }
 
-        Intent timerSummary = new Intent(this, MainActivity.class);
+            public void onFinish() {
+                handleAlarm();
+            }
+        }.start();
+    }
 
-        timerSummary.putExtra("timer_name", nameInput.getText());
-        timerSummary.putExtra("timer_duration", durationInput.getText());
+    private void handleAlarm() {
+        Toast.makeText(this, this.timerDescription.getText() + " (" + this.countDown + " seconds)" + " has finished!", Toast.LENGTH_LONG).show();
+        this.alarm.play();
+    }
 
-        this.startActivity(timerSummary);
+    private void clearAlarm() {
+        this.timer.cancel();
+        this.alarm.stop();
+        this.timerCountdown.setEnabled(true);
+        this.timerDescription.setEnabled(true);
     }
 }
